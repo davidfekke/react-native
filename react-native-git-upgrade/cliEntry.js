@@ -59,7 +59,7 @@ function exec(command, logOutput) {
 stderr: ${stderr}
 stdout: ${stdout}`));
     });
-  })
+  });
 }
 
 function parseJsonFile(path, useYarn) {
@@ -93,7 +93,7 @@ function readPackageFiles(useYarn) {
     reactNativeNodeModulesPak: parseJsonFile(reactNativeNodeModulesPakPath),
     reactNodeModulesPak: parseJsonFile(reactNodeModulesPakPath),
     pak: parseJsonFile(pakPath)
-  }
+  };
 }
 
 function parseInformationJsonOutput(jsonOutput, requestedVersion) {
@@ -105,7 +105,7 @@ function parseInformationJsonOutput(jsonOutput, requestedVersion) {
 
     assert(semver.valid(newVersion));
 
-    return {newVersion, newReactVersionRange}
+    return {newVersion, newReactVersionRange};
   } catch (err) {
     throw new Error(
       'The specified version of React Native ' + requestedVersion + ' doesn\'t exist.\n' +
@@ -147,7 +147,7 @@ function generateTemplates(generatorDir, appName, verbose) {
     // Try requiring the index.js (entry-point of Yeoman generators)
     fs.accessSync(yeomanGeneratorEntryPoint);
     return runYeomanGenerators(generatorDir, appName, verbose);
-  } catch(err) {
+  } catch (err) {
     return runCopyAndReplace(generatorDir, appName);
   }
 }
@@ -160,7 +160,7 @@ function runCopyAndReplace(generatorDir, appName) {
    * This file could have changed between these 2 versions. When generating the new template,
    * we don't want to load the old version of the generator from the cache
    */
-  delete require.cache[copyProjectTemplateAndReplacePath];
+  delete require.cache[require.resolve(copyProjectTemplateAndReplacePath)];
   const copyProjectTemplateAndReplace = require(copyProjectTemplateAndReplacePath);
   copyProjectTemplateAndReplace(
     path.resolve(generatorDir, '..', 'templates', 'HelloWorld'),
@@ -278,9 +278,9 @@ async function run(requestedVersion, cliArgs) {
     await exec('git add .', verbose);
 
     log.info('Commit current project sources');
-    await exec('git commit -m "Project snapshot"', verbose);
+    await exec('git commit -m "Project snapshot" --no-verify', verbose);
 
-    log.info ('Create a tag before updating sources');
+    log.info('Create a tag before updating sources');
     await exec('git tag project-snapshot', verbose);
     projectBackupCreated = true;
 
@@ -291,7 +291,7 @@ async function run(requestedVersion, cliArgs) {
     await exec('git add .', verbose);
 
     log.info('Commit old version template');
-    await exec('git commit -m "Old version" --allow-empty', verbose);
+    await exec('git commit -m "Old version" --allow-empty --no-verify', verbose);
 
     log.info('Install the new version');
     let installCommand;
@@ -314,10 +314,10 @@ async function run(requestedVersion, cliArgs) {
     await exec('git add .', verbose);
 
     log.info('Commit new version template');
-    await exec('git commit -m "New version" --allow-empty', verbose);
+    await exec('git commit -m "New version" --allow-empty --no-verify', verbose);
 
     log.info('Generate the patch between the 2 versions');
-    const diffOutput = await exec('git diff HEAD~1 HEAD --no-color', verbose);
+    const diffOutput = await exec('git diff --binary --no-color HEAD~1 HEAD', verbose);
 
     log.info('Save the patch in temp directory');
     const patchPath = path.resolve(tmpDir, `upgrade_${currentVersion}_${newVersion}.patch`);
@@ -345,7 +345,7 @@ async function run(requestedVersion, cliArgs) {
     log.error(err.stack);
     if (projectBackupCreated) {
       log.error('Restore initial sources');
-      await exec('git checkout project-snapshot', true);
+      await exec('git checkout project-snapshot --no-verify', true);
     }
   }
 }
